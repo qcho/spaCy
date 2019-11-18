@@ -28,6 +28,7 @@ from .. import about
     dev_path=("Location of JSON-formatted development data", "positional", None, Path),
     raw_text=("Path to jsonl file with unlabelled text documents.", "option", "rt", Path),
     base_model=("Name of model to update (optional)", "option", "b", str),
+    learn_labels=("Make NER learn new labels", "flag", "L", bool),
     pipeline=("Comma-separated names of pipeline components", "option", "p", str),
     vectors=("Model to load vectors from", "option", "v", str),
     n_iter=("Number of iterations", "option", "n", int),
@@ -58,6 +59,7 @@ def train(
     dev_path,
     raw_text=None,
     base_model=None,
+    learn_labels=False,
     pipeline="tagger,parser,ner",
     vectors=None,
     n_iter=30,
@@ -166,6 +168,8 @@ def train(
                         "architecture": textcat_arch,
                         "positive_label": textcat_positive_label,
                     }
+                elif pipe == "ner":
+                    pipe_cfg = {"learn_labels": learn_labels}
                 else:
                     pipe_cfg = {}
                 nlp.add_pipe(nlp.create_pipe(pipe, config=pipe_cfg))

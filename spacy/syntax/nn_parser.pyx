@@ -26,6 +26,7 @@ from thinc.neural.ops import CupyOps
 from thinc.neural.util import get_array_module
 from thinc.linalg cimport Vec, VecVec
 import srsly
+import re
 
 from ._parser_model cimport alloc_activations, free_activations
 from ._parser_model cimport predict_states, arg_max_if_valid
@@ -434,7 +435,15 @@ cdef class Parser:
         # Chop sequences into lengths of this many transitions, to make the
         # batch uniform length.
         cut_gold = numpy.random.choice(range(20, 100))
-        states, golds, max_steps = self._init_gold_batch(docs, golds, max_length=cut_gold)
+        try:
+            states, golds, max_steps = self._init_gold_batch(docs, golds, max_length=cut_gold)
+        except KeyError as e:
+            m = re.match(r'\[(?P<code>E[0-9]+)\].*[BILUO]-(?P<label>[A-Z]+)', e.args[0])
+            if (m.group('code') == 'E022') and self.cfg.get("learn_labels", True):
+                self.add_label(m.group('label'))
+                states, golds, max_steps = self._init_gold_batch(docs, golds, max_length=cut_gold)
+            else:
+                raise e
         states_golds = [(s, g) for (s, g) in zip(states, golds)
                         if not s.is_final() and g is not None]
 
